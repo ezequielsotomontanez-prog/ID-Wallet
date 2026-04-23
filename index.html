@@ -1,148 +1,85 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Subida de Carnets</title>
-    
+    <title>Mis Carnets</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Carnets">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            -webkit-tap-highlight-color: transparent;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-top: 40px;
-        }
-        #fileInput {
-            display: block;
-            margin: 0 auto 20px;
-            padding: 15px;
-            font-size: 16px;
-            border: 2px dashed #007BFF;
-            border-radius: 10px;
-            cursor: pointer;
-            background-color: #fff;
-            width: 80%;
-            max-width: 400px;
-            text-align: center;
-        }
-        #carnetContainer {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-        }
-        .carnet {
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
-            background-color: #fff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        img {
-            max-width: 250px;
-            height: auto;
-            display: block;
-            cursor: pointer;
-        }
-        .remove-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(255, 0, 0, 0.8);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .full-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: black;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .full-screen img {
-            max-width: 95%;
-            max-height: 95%;
-            border: none;
-        }
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; text-align: center; }
+        #fileInput { margin: 20px auto; padding: 15px; border: 2px dashed #007BFF; border-radius: 10px; background: #fff; display: block; width: 80%; }
+        #carnetContainer { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .carnet { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background: #fff; }
+        img { max-width: 200px; display: block; cursor: pointer; }
+        .remove-btn { position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; }
+        .full-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; justify-content: center; align-items: center; z-index: 1000; }
+        .full-screen img { max-width: 95%; max-height: 95%; }
     </style>
 </head>
 <body>
     <h1>Mis Carnets</h1>
     <input type="file" id="fileInput" accept="image/*" multiple>
-    
     <div id="carnetContainer"></div>
-
-    <div class="full-screen" id="fullScreen">
-        <img id="fullScreenImg" src="" alt="Vista Completa">
-    </div>
+    <div class="full-screen" id="fullScreen"><img id="fullScreenImg" src=""></div>
 
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const carnetContainer = document.getElementById('carnetContainer');
+        const container = document.getElementById('carnetContainer');
         const fullScreen = document.getElementById('fullScreen');
         const fullScreenImg = document.getElementById('fullScreenImg');
 
-        function addImage(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const carnetDiv = document.createElement('div');
-                carnetDiv.classList.add('carnet');
+        // Cargar al iniciar
+        window.onload = () => {
+            const saved = JSON.parse(localStorage.getItem('mis_id_v2') || '[]');
+            saved.forEach(data => renderImage(data));
+        };
 
-                const img = document.createElement('img');
-                img.src = e.target.result;
-
-                const removeBtn = document.createElement('button');
-                removeBtn.classList.add('remove-btn');
-                removeBtn.innerText = 'X';
-                removeBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    carnetDiv.remove();
-                };
-
-                img.onclick = () => {
-                    fullScreenImg.src = e.target.result;
-                    fullScreen.style.display = 'flex';
-                };
-
-                carnetDiv.appendChild(removeBtn);
-                carnetDiv.appendChild(img);
-                carnetContainer.appendChild(carnetDiv);
-            };
-            reader.readAsDataURL(file);
+        function renderImage(data) {
+            const div = document.createElement('div');
+            div.className = 'carnet';
+            const img = document.createElement('img');
+            img.src = data;
+            img.onclick = () => { fullScreenImg.src = data; fullScreen.style.display = 'flex'; };
+            const btn = document.createElement('button');
+            btn.className = 'remove-btn';
+            btn.innerText = 'X';
+            btn.onclick = () => { div.remove(); save(); };
+            div.append(btn, img);
+            container.appendChild(div);
         }
 
-        fileInput.addEventListener('change', (event) => {
-            const files = event.target.files;
-            for (let i = 0; i < files.length; i++) {
-                addImage(files[i]);
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            for (let file of e.target.files) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const tempImg = new Image();
+                    tempImg.src = event.target.result;
+                    tempImg.onload = () => {
+                        // COMPRESIÓN: Reducimos la foto para que quepa en la memoria
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const scale = 600 / tempImg.width; // Forzamos ancho de 600px
+                        canvas.width = 600;
+                        canvas.height = tempImg.height * scale;
+                        ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+                        const compressed = canvas.toDataURL('image/jpeg', 0.7); // Calidad 70%
+                        renderImage(compressed);
+                        save();
+                    };
+                };
+                reader.readAsDataURL(file);
             }
         });
 
-        fullScreen.onclick = () => {
-            fullScreen.style.display = 'none';
-        };
+        function save() {
+            const imgs = Array.from(container.querySelectorAll('img')).map(i => i.src);
+            try {
+                localStorage.setItem('mis_id_v2', JSON.stringify(imgs));
+            } catch (e) {
+                alert("Memoria llena. Borra algunas fotos antiguas.");
+            }
+        }
+        fullScreen.onclick = () => fullScreen.style.display = 'none';
     </script>
 </body>
 </html>
